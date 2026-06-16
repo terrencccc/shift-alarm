@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>排班鬧鐘</title>
+<style>
+  :root{--ink:#1a1d23;--paper:#e8e4d8;--amber:#e8a33d;--line:#3a3f47;--rest:#9bb09b;--stamp:#c0392b;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Helvetica Neue","PingFang TC","Microsoft JhengHei",sans-serif;
+    background:var(--ink);color:var(--paper);min-height:100vh;
+    display:flex;align-items:center;justify-content:center;padding:24px;}
+  .card{width:100%;max-width:420px;text-align:center;border:2px solid var(--line);
+    border-radius:8px;background:linear-gradient(180deg,#22262d,#1a1d23);
+    padding:32px 24px 28px;position:relative;overflow:hidden;}
+  .card::after{content:"勤務";position:absolute;right:-8px;top:-14px;font-size:96px;
+    font-weight:800;color:rgba(192,57,43,.07);letter-spacing:-4px;}
+  .eyebrow{font-size:11px;letter-spacing:3px;color:var(--amber);margin-bottom:14px;}
+  .date{font-size:15px;color:#9aa0aa;letter-spacing:1px;}
+  .ban{font-size:20px;font-weight:800;margin:6px 0 22px;}
+  .ban .n{color:var(--amber);font-size:26px;}
+  .alarm-lbl{font-size:12px;letter-spacing:3px;color:#8a909a;margin-bottom:8px;}
+  .alarm{font-size:78px;font-weight:800;line-height:1;color:var(--amber);
+    font-variant-numeric:tabular-nums;letter-spacing:2px;}
+  .alarm.off{color:var(--rest);font-size:56px;letter-spacing:6px;}
+  .shift{font-size:15px;color:var(--paper);margin-top:16px;}
+  .shift b{color:#cfd4dc;}
+  .note{margin-top:16px;border-left:3px solid var(--stamp);background:rgba(192,57,43,.12);
+    padding:9px 12px;font-size:13px;line-height:1.5;color:#e8b4ad;text-align:left;}
+  .note.amber{border-color:var(--amber);background:rgba(232,163,61,.1);color:#e8cfa3;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="eyebrow">西園路派出所 · 今日勤務</div>
+  <div class="date" id="date">—</div>
+  <div class="ban" id="ban">—</div>
+  <div class="alarm-lbl">起床鬧鐘</div>
+  <div class="alarm" id="alarm">—</div>
+  <div class="shift" id="shift"></div>
+  <div id="noteArea"></div>
+</div>
+
+<script>
+/* ===== 錨點：2026-06-16 = 3番。要校正改這裡 ===== */
+var ANCHOR_DATE="2026-06-16", ANCHOR_BAN=3;
+/* =============================================== */
+
+var DATA={
+  1:{alarm:"08:40",shift:"9-21",type:"day"},
+  2:{special:"ban2",type:"day"},
+  3:{special:"ban3",type:"day"},
+  4:{alarm:"05:40",shift:"6-18",type:"day"},
+  5:{alarm:"05:40",shift:"6-17",type:"day"},
+  6:{type:"rest"},7:{type:"rest"},
+  8:{alarm:"17:40",shift:"18-翌06",type:"night"},
+  9:{alarm:"20:40",shift:"21-翌09",type:"night"},
+  10:{alarm:"20:40",shift:"21-翌09",type:"night"},
+  11:{alarm:"20:40",shift:"21-翌09",type:"night"},
+  12:{alarm:"20:40",shift:"21-翌06",type:"night"},
+  13:{type:"rest"},14:{type:"rest"},
+  15:{alarm:"14:40",shift:"15-翌03",type:"mid"},
+  16:{alarm:"14:40",shift:"15-翌03",type:"mid",locked:true},
+  17:{alarm:"14:40",shift:"15-23",type:"mid"},
+  18:{type:"rest"},19:{type:"rest"}
+};
+var WD=["日","一","二","三","四","五","六"];
+function isWk(d){var g=d.getDay();return g===0||g===6;}
+function iso(d){return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2);}
+function banOf(d){
+  var a=new Date(ANCHOR_DATE+"T00:00:00");
+  var t=new Date(iso(d)+"T00:00:00");
+  var diff=Math.round((t-a)/86400000);
+  return ((ANCHOR_BAN-1+diff)%19+19)%19+1;
+}
+
+var today=new Date();
+var yest=new Date(today.getTime()-86400000);
+var tomo=new Date(today.getTime()+86400000);
+var n=banOf(today), yb=banOf(yest), info=DATA[n];
+
+var ALARM, shift, banLabel="第 "+n+" 番", noteHtml="", rest=false;
+
+if(n===3 && yb===2){
+  var wk=isWk(today);
+  ALARM=wk?"05:40":"06:40";
+  shift=(wk?"6-9":"7-9")+" → 9-18 連續";
+  banLabel="第 3 番（2番收尾）";
+  noteHtml='<div class="note">不能請假，連續上到18:00。</div>';
+}else if(n===2){
+  ALARM="08:40";
+  shift=isWk(today)?"9-18":"9-19";
+  var t2=isWk(tomo);
+  noteHtml='<div class="note">2番不能請假。明天'+(t2?"5:40":"6:40")+'起連續上到18:00，今晚早睡。</div>';
+}else if(n===3){
+  ALARM="08:40";shift="9-17";
+  noteHtml='<div class="note">3番不能請假。</div>';
+}else if(info.type==="rest"){
+  rest=true;ALARM="OFF";shift="輪休";
+}else{
+  ALARM=info.alarm;shift=info.shift;
+  if(info.locked)noteHtml='<div class="note">'+n+'番不能請假。</div>';
+  if(n===4||n===5)noteHtml+='<div class="note amber">清晨早起，今晚請早睡。</div>';
+  if(info.type==="night")noteHtml+='<div class="note amber">夜班跨日，下班後補眠。</div>';
+}
+
+document.getElementById("date").textContent=
+  (today.getFullYear()-1911)+"年"+(today.getMonth()+1)+"月"+today.getDate()+"日（"+WD[today.getDay()]+"）";
+document.getElementById("ban").innerHTML=banLabel.replace(/(\d+)/,'<span class="n">$1</span>');
+var al=document.getElementById("alarm");
+al.textContent=ALARM;
+if(rest)al.className="alarm off";
+document.getElementById("shift").innerHTML=rest?"":'勤務 <b>'+shift+'</b>';
+document.getElementById("noteArea").innerHTML=noteHtml;
+
+/* 給捷徑抓：把結果放進 title 與全域變數 */
+document.title=ALARM;
+window.ALARM_RESULT=ALARM;
+</script>
+</body>
+</html>
