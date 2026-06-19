@@ -96,7 +96,7 @@ if(n===3 && yb===2){
   ALARM="08:40";shift="9-17";
   noteHtml='<div class="note">3番不能請假。</div>';
 }else if(info.type==="rest"){
-  rest=true;ALARM="No";shift="輪休";
+  rest=true;ALARM="";shift="輪休";
 }else{
   ALARM=info.alarm;shift=info.shift;
   if(info.locked)noteHtml='<div class="note">'+n+'番不能請假。</div>';
@@ -108,7 +108,7 @@ document.getElementById("date").textContent=
   (today.getFullYear()-1911)+"年"+(today.getMonth()+1)+"月"+today.getDate()+"日（"+WD[today.getDay()]+"）";
 document.getElementById("ban").innerHTML=banLabel.replace(/(\d+)/,'<span class="n">$1</span>');
 var al=document.getElementById("alarm");
-al.textContent=ALARM;
+al.textContent=rest?"輪休":ALARM;
 if(rest)al.className="alarm off";
 document.getElementById("shift").innerHTML=rest?"":'勤務 <b>'+shift+'</b>';
 document.getElementById("noteArea").innerHTML=noteHtml;
