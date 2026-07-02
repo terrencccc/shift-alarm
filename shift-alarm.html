@@ -96,7 +96,7 @@ if(n===3 && yb===2){
   ALARM="08:40";shift="9-17";
   noteHtml='<div class="note">3番不能請假。</div>';
 }else if(info.type==="rest"){
-  rest=true;ALARM="輪休";shift="輪休";
+  rest=true;ALARM="—";shift="輪休";
 }else{
   ALARM=info.alarm;shift=info.shift;
   if(info.locked)noteHtml='<div class="note">'+n+'番不能請假。</div>';
